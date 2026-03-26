@@ -77,6 +77,46 @@ def translate_and_summarize(title: str, url: str = "", content: str = "") -> Dic
         }
 
 
+def batch_translate_titles(articles: List[Dict]) -> List[str]:
+    """
+    여러 기사 제목을 한 번의 API 호출로 일괄 번역
+    articles: [{"id": int, "title_original": str}, ...]
+    반환: id 순서대로 번역된 제목 리스트
+    """
+    if not articles:
+        return []
+
+    titles_text = "\n".join([
+        f"{i+1}. {a['title_original']}"
+        for i, a in enumerate(articles)
+    ])
+
+    prompt = f"""다음 기술 기사 제목들을 한국어로 번역해주세요.
+번호 순서대로, 번역된 제목만 한 줄씩 출력하세요. 다른 설명은 절대 추가하지 마세요.
+
+{titles_text}"""
+
+    result = _call_gemini(prompt)
+    if not result:
+        return [a["title_original"] for a in articles]
+
+    # 번호 제거 후 파싱
+    lines = [l.strip() for l in result.strip().splitlines() if l.strip()]
+    parsed = []
+    for line in lines:
+        # "1. 번역된 제목" 형태에서 번호 제거
+        import re
+        cleaned = re.sub(r"^\d+\.\s*", "", line)
+        if cleaned:
+            parsed.append(cleaned)
+
+    # 개수가 맞지 않으면 원문으로 채움
+    while len(parsed) < len(articles):
+        parsed.append(articles[len(parsed)]["title_original"])
+
+    return parsed[:len(articles)]
+
+
 def generate_daily_summary(articles: List[Dict]) -> str:
     """
     상위 기사들을 바탕으로 오늘의 핵심 이슈 3~5줄 생성

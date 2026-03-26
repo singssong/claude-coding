@@ -232,6 +232,18 @@ main {
   margin-bottom: 6px;
 }
 
+.untranslated-badge {
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.extra-feed .card-wrapper { opacity: 0.85; }
+.extra-feed .card-wrapper:hover { opacity: 1; }
+
 .source-tag {
   font-size: 11px;
   color: var(--accent);

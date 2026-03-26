@@ -8,7 +8,6 @@
 </head>
 <body>
 
-  <!-- 헤더 -->
   <header>
     <div class="header-inner">
       <div class="logo">
@@ -38,31 +37,36 @@
       </div>
     </section>
 
-    <!-- 뉴스 피드 -->
+    <!-- 상위 10개 -->
     <section class="feed-section">
       <div class="feed-header">
-        <h2 class="feed-title">인기 기사 순위</h2>
-        <span class="feed-count" id="feedCount"></span>
+        <h2 class="feed-title">오늘의 인기 기사</h2>
+        <span class="feed-count" id="topFeedCount"></span>
       </div>
-
-      <div id="newsFeed" class="news-feed">
-        <!-- JS로 렌더링 -->
-      </div>
-
-      <div id="loadingIndicator" class="loading">
-        <div class="spinner"></div>
-        <span>기사 불러오는 중...</span>
-      </div>
-
-      <div id="emptyState" class="empty-state" style="display:none">
-        <p>수집된 기사가 없습니다.</p>
-        <a href="/settings" class="btn-primary">소스 설정 &amp; 크롤링 실행하기 →</a>
-      </div>
+      <div id="topFeed" class="news-feed"></div>
     </section>
+
+    <!-- 읽을만한 기사 5개 -->
+    <section class="feed-section" id="extraSection" style="display:none">
+      <div class="feed-header" style="margin-top:32px">
+        <h2 class="feed-title">읽을만한 기사</h2>
+        <span class="feed-count">5개</span>
+      </div>
+      <div id="extraFeed" class="news-feed extra-feed"></div>
+    </section>
+
+    <div id="loadingIndicator" class="loading">
+      <div class="spinner"></div>
+      <span>기사 불러오는 중...</span>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display:none">
+      <p>수집된 기사가 없습니다.</p>
+      <a href="/settings" class="btn-primary">소스 설정 &amp; 수집 실행하기 →</a>
+    </div>
 
   </main>
 
-  <!-- 키워드 툴팁 -->
   <div id="tooltip" class="keyword-tooltip" style="display:none"></div>
 
   <script src="/static/js/main.js"></script>
