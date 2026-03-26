@@ -82,8 +82,8 @@ async function runCrawl() {
   const statusEl = document.getElementById('crawlStatus');
 
   btn.disabled = true;
-  btn.textContent = '⏳ 수집 중...';
-  showStatus(statusEl, '크롤링 실행 중... 수십 초 소요될 수 있습니다.', 'running');
+  btn.textContent = '수집 중...';
+  showStatus(statusEl, '크롤링 실행 중... 기사 본문 수집 + AI 번역/요약 포함 1~3분 소요됩니다.', 'running');
 
   try {
     const res = await fetch('/api/settings/crawl-now', { method: 'POST' });
@@ -91,17 +91,20 @@ async function runCrawl() {
 
     if (data.status === 'success') {
       showStatus(statusEl,
-        `✅ 완료! 총 ${data.total_fetched}개 수집 → ${data.saved}개 신규 저장`,
+        `완료! 총 ${data.total_fetched}개 수집 -> ${data.saved}개 신규 저장. 메인 페이지로 이동합니다...`,
         'success'
       );
+      // 2초 후 메인 페이지로 이동
+      setTimeout(() => { window.location.href = '/'; }, 2000);
     } else {
-      showStatus(statusEl, `❌ ${data.message || '수집 실패'}`, 'error');
+      showStatus(statusEl, `수집 실패: ${data.message || '알 수 없는 오류'}`, 'error');
+      btn.disabled = false;
+      btn.textContent = '지금 수집 실행';
     }
   } catch (e) {
-    showStatus(statusEl, '❌ 서버 오류가 발생했습니다.', 'error');
-  } finally {
+    showStatus(statusEl, '서버 오류가 발생했습니다.', 'error');
     btn.disabled = false;
-    btn.textContent = '🔄 지금 수집 실행';
+    btn.textContent = '지금 수집 실행';
   }
 }
 
@@ -119,6 +122,20 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ===== 데이터 초기화 =====
+async function resetArticles() {
+  if (!confirm('기사 데이터를 전체 삭제합니다. 이후 수집을 다시 실행해야 합니다. 계속할까요?')) return;
+
+  const statusEl = document.getElementById('crawlStatus');
+  try {
+    const res = await fetch('/api/settings/reset-articles', { method: 'POST' });
+    const data = await res.json();
+    showStatus(statusEl, data.message, 'success');
+  } catch (e) {
+    showStatus(statusEl, '초기화 중 오류가 발생했습니다.', 'error');
+  }
 }
 
 // ===== 초기화 =====

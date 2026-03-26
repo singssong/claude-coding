@@ -13,7 +13,7 @@ load_dotenv()
 
 # Gemini 설정
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
 model = genai.GenerativeModel(MODEL_NAME)
 
 
@@ -23,7 +23,8 @@ def _call_gemini(prompt: str) -> str:
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        print(f"⚠️  Gemini API 오류: {e}")
+        # Windows cp949 환경에서도 에러 출력
+        print(f"[Gemini API ERROR] {str(e)[:200]}")
         return ""
 
 

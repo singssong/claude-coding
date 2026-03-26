@@ -67,3 +67,13 @@ def crawl_now():
     from app.services.crawl_service import run_crawling
     result = run_crawling()
     return result
+
+
+@router.post("/reset-articles")
+def reset_articles():
+    """기사 데이터 전체 초기화 (번역 오류 데이터 삭제 후 재수집 용도)"""
+    with get_db() as conn:
+        conn.execute("DELETE FROM articles")
+        conn.execute("DELETE FROM daily_summary")
+        conn.execute("DELETE FROM keyword_tooltips")
+    return {"status": "ok", "message": "기사 데이터가 초기화되었습니다. 다시 수집을 실행해주세요."}
