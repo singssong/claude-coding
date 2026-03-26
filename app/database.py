@@ -13,7 +13,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "..", "trendlens.db")
 def get_connection():
     """DB 연결 반환"""
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # dict처럼 컬럼명으로 접근 가능
+    conn.row_factory = sqlite3.Row
     return conn
 
 
@@ -32,7 +32,7 @@ def get_db():
 
 
 def init_db():
-    """테이블 생성 (최초 실행 시 1회)"""
+    """테이블 생성 및 컬럼 마이그레이션"""
     with get_db() as conn:
         conn.executescript("""
             -- 기사 테이블
@@ -48,6 +48,7 @@ def init_db():
                 comment_count   INTEGER DEFAULT 0,
                 view_count      INTEGER DEFAULT 0,
                 keywords        TEXT DEFAULT '[]',
+                is_translated   INTEGER DEFAULT 0,
                 crawled_at      DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -69,11 +70,13 @@ def init_db():
                 is_active   INTEGER DEFAULT 1
             );
 
-            -- 키워드 툴팁 캐시 테이블 (동일 키워드 반복 API 호출 방지)
+            -- 단어장 테이블 (키워드 툴팁 + 이미지)
             CREATE TABLE IF NOT EXISTS keyword_tooltips (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 keyword     TEXT UNIQUE NOT NULL,
                 explanation TEXT NOT NULL,
+                image_url   TEXT,
+                source      TEXT DEFAULT 'ai',
                 created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -86,7 +89,10 @@ def init_db():
             );
         """)
 
-        # 기본 소스 목록 삽입 (중복 방지)
+        # 기존 테이블에 누락된 컬럼 추가 (마이그레이션)
+        _migrate(conn)
+
+        # 기본 소스 목록 삽입
         default_sources = [
             ("Reddit - MachineLearning", "https://www.reddit.com/r/MachineLearning/hot.json", "reddit"),
             ("Reddit - artificial",      "https://www.reddit.com/r/artificial/hot.json",      "reddit"),
@@ -95,9 +101,21 @@ def init_db():
             ("Anthropic Blog",           "https://www.anthropic.com/news",                     "html"),
         ]
         conn.executemany(
-            """INSERT OR IGNORE INTO sources (name, url, source_type, is_default, is_active)
-               VALUES (?, ?, ?, 1, 1)""",
+            "INSERT OR IGNORE INTO sources (name, url, source_type, is_default, is_active) VALUES (?, ?, ?, 1, 1)",
             default_sources
         )
 
-    print("✅ DB 초기화 완료")
+    print("DB 초기화 완료")
+
+
+def _migrate(conn):
+    """기존 DB에 새 컬럼 추가 (없을 때만)"""
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(articles)").fetchall()}
+    if "is_translated" not in existing:
+        conn.execute("ALTER TABLE articles ADD COLUMN is_translated INTEGER DEFAULT 0")
+
+    existing_kt = {row[1] for row in conn.execute("PRAGMA table_info(keyword_tooltips)").fetchall()}
+    if "image_url" not in existing_kt:
+        conn.execute("ALTER TABLE keyword_tooltips ADD COLUMN image_url TEXT")
+    if "source" not in existing_kt:
+        conn.execute("ALTER TABLE keyword_tooltips ADD COLUMN source TEXT DEFAULT 'ai'")

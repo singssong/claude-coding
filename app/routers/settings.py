@@ -71,9 +71,26 @@ def crawl_now():
 
 @router.post("/reset-articles")
 def reset_articles():
-    """기사 데이터 전체 초기화 (번역 오류 데이터 삭제 후 재수집 용도)"""
+    """기사 데이터 전체 초기화"""
     with get_db() as conn:
         conn.execute("DELETE FROM articles")
         conn.execute("DELETE FROM daily_summary")
-        conn.execute("DELETE FROM keyword_tooltips")
     return {"status": "ok", "message": "기사 데이터가 초기화되었습니다. 다시 수집을 실행해주세요."}
+
+
+@router.post("/build-glossary")
+def build_glossary():
+    """단어장 초기 구축 (Wikipedia + Gemini)"""
+    from app.services.glossary_service import build_initial_glossary
+    build_initial_glossary()
+    return {"status": "ok", "message": "단어장 구축이 완료되었습니다."}
+
+
+@router.get("/glossary")
+def get_glossary():
+    """단어장 전체 목록 반환"""
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT keyword, explanation, image_url, source FROM keyword_tooltips ORDER BY keyword"
+        ).fetchall()
+    return {"glossary": [dict(row) for row in rows]}

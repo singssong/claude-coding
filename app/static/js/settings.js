@@ -124,6 +124,27 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ===== 단어장 구축 =====
+async function buildGlossary() {
+  const btn = document.getElementById('glossaryBtn');
+  const statusEl = document.getElementById('glossaryStatus');
+
+  btn.disabled = true;
+  btn.textContent = '구축 중...';
+  showStatus(statusEl, 'Wikipedia + AI로 기술 용어 수집 중... 1~2분 소요됩니다.', 'running');
+
+  try {
+    const res = await fetch('/api/settings/build-glossary', { method: 'POST' });
+    const data = await res.json();
+    showStatus(statusEl, data.message, 'success');
+  } catch (e) {
+    showStatus(statusEl, '단어장 구축 중 오류가 발생했습니다.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '단어장 구축 실행';
+  }
+}
+
 // ===== 데이터 초기화 =====
 async function resetArticles() {
   if (!confirm('기사 데이터를 전체 삭제합니다. 이후 수집을 다시 실행해야 합니다. 계속할까요?')) return;

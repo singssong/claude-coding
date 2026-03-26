@@ -128,20 +128,82 @@ main {
 
 .news-feed { display: flex; flex-direction: column; gap: 12px; }
 
+/* ========== 카드 래퍼 (카드 + 확장 영역) ========== */
+.card-wrapper {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.card-wrapper:hover { border-color: var(--accent); }
+
 /* ========== 뉴스 카드 ========== */
 .news-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   padding: 18px 20px;
   display: flex;
   gap: 16px;
-  transition: border-color 0.2s, transform 0.15s;
   cursor: pointer;
+  border: none;
 }
-.news-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
+.news-card:hover { background: color-mix(in srgb, var(--surface) 85%, var(--accent)); }
+
+/* ========== 카드 확장 영역 ========== */
+.card-expand {
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+.expand-inner {
+  padding: 20px 24px;
+}
+.translated-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.translated-summary {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.keyword-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.expand-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn-original {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  padding: 6px 14px;
+  border-radius: 7px;
+  transition: background 0.2s;
+}
+.btn-original:hover { background: rgba(108, 99, 255, 0.15); }
+
+.translate-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 4px 0;
+}
+.translate-error { font-size: 13px; color: var(--red); }
+
+.expand-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
 }
 
 .rank-badge {
@@ -182,20 +244,9 @@ main {
 .card-title {
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--text);
-  text-decoration: none;
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.card-title:hover { color: var(--accent); }
-
-.card-summary {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -234,6 +285,16 @@ main {
   gap: 10px;
 }
 .stat { display: flex; align-items: center; gap: 3px; }
+
+/* ========== 툴팁 이미지 ========== */
+.tooltip-img {
+  display: block;
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-top: 10px;
+}
 
 /* ========== 키워드 툴팁 ========== */
 .keyword-tooltip {

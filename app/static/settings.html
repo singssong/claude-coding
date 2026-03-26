@@ -32,6 +32,14 @@
         <button id="crawlNowBtn" class="btn-primary" onclick="runCrawl()">지금 수집 실행</button>
         <button class="btn-reset" onclick="resetArticles()">데이터 초기화</button>
       </div>
+    </section>
+
+    <!-- 단어장 구축 -->
+    <section class="settings-section">
+      <h2 class="settings-section-title">단어장 구축</h2>
+      <p class="settings-desc">AI, 데이터센터, 로봇 등 핵심 기술 용어 약 30개를 Wikipedia + AI로 자동 수집합니다.<br>기사 내 키워드에 마우스를 올리면 설명과 이미지가 표시됩니다.</p>
+      <button id="glossaryBtn" class="btn-primary" onclick="buildGlossary()">단어장 구축 실행</button>
+      <div id="glossaryStatus" class="crawl-status" style="display:none"></div>
       <div id="crawlStatus" class="crawl-status" style="display:none"></div>
     </section>
 
