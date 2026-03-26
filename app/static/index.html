@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrendLens</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- 헤더 -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">TrendLens</span>
+        <span class="logo-sub">AI 기술 트렌드</span>
+      </div>
+      <nav>
+        <a href="/settings" class="nav-link">⚙️ 소스 설정</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 오늘의 핵심 이슈 -->
+    <section class="daily-summary-section">
+      <div class="section-label">
+        <span class="badge">TODAY</span>
+        <span class="section-title">오늘의 핵심 이슈</span>
+        <span class="update-time" id="updateTime"></span>
+      </div>
+      <div class="daily-summary-box" id="dailySummary">
+        <div class="skeleton-text"></div>
+        <div class="skeleton-text short"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </section>
+
+    <!-- 뉴스 피드 -->
+    <section class="feed-section">
+      <div class="feed-header">
+        <h2 class="feed-title">인기 기사 순위</h2>
+        <span class="feed-count" id="feedCount"></span>
+      </div>
+
+      <div id="newsFeed" class="news-feed">
+        <!-- JS로 렌더링 -->
+      </div>
+
+      <div id="loadingIndicator" class="loading">
+        <div class="spinner"></div>
+        <span>기사 불러오는 중...</span>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display:none">
+        <p>수집된 기사가 없습니다.</p>
+        <a href="/settings" class="btn-primary">소스 설정 &amp; 크롤링 실행하기 →</a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 키워드 툴팁 -->
+  <div id="tooltip" class="keyword-tooltip" style="display:none"></div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
