@@ -1,6 +1,6 @@
 """
 Geeknews (news.hada.io) 크롤러
-한국 기술 커뮤니티 - 포인트 및 댓글 수 기반 인기 기사 수집
+포인트 및 댓글 수 기반 인기 기사 수집
 """
 
 import httpx
@@ -22,45 +22,42 @@ class GeeknewsCrawler(BaseCrawler):
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Geeknews 기사 목록 파싱
-            # 각 기사는 .topic-row 또는 li 형태로 구성
-            topic_items = soup.select("li.topic-row") or soup.select(".topic_row") or soup.select("li")
+            topic_items = soup.select("div.topic_row")
 
             for item in topic_items[:30]:
                 try:
-                    # 제목 및 링크
-                    title_tag = item.select_one("a.topic-title") or item.select_one(".title a") or item.select_one("a")
+                    # 실제 기사 링크 (.topictitle > a)
+                    title_tag = item.select_one(".topictitle a")
                     if not title_tag:
                         continue
 
-                    title = title_tag.get_text(strip=True)
                     url = title_tag.get("href", "")
-                    if not url or not title:
+                    # javascript: 링크 제외
+                    if not url or url.startswith("javascript"):
                         continue
 
-                    # 상대 경로 처리
-                    if url.startswith("/"):
-                        url = BASE_URL + url
+                    # 제목: h1 태그 우선, 없으면 링크 텍스트
+                    h1 = title_tag.select_one("h1")
+                    title = h1.get_text(strip=True) if h1 else title_tag.get_text(strip=True)
+                    if not title:
+                        continue
 
-                    # 포인트(점수) 파싱
+                    # 포인트 파싱 (span[id^="tp"])
                     score = 0
-                    score_tag = item.select_one(".score") or item.select_one(".point") or item.select_one(".votes")
+                    score_tag = item.select_one("span[id^='tp']")
                     if score_tag:
-                        score_text = score_tag.get_text(strip=True).replace(",", "")
                         try:
-                            score = int("".join(filter(str.isdigit, score_text)))
+                            score = int(score_tag.get_text(strip=True))
                         except ValueError:
                             score = 0
 
-                    # 댓글 수 파싱
+                    # 댓글 수 파싱 (a[href*="go=comments"])
                     comment_count = 0
-                    comment_tag = item.select_one(".comments") or item.select_one(".comment-count")
+                    comment_tag = item.select_one("a[href*='go=comments']")
                     if comment_tag:
-                        comment_text = comment_tag.get_text(strip=True).replace(",", "")
-                        try:
-                            comment_count = int("".join(filter(str.isdigit, comment_text)))
-                        except ValueError:
-                            comment_count = 0
+                        comment_text = comment_tag.get_text(strip=True)
+                        digits = "".join(filter(str.isdigit, comment_text))
+                        comment_count = int(digits) if digits else 0
 
                     articles.append(RawArticle(
                         title=title,

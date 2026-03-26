@@ -13,6 +13,7 @@ from app.crawlers.geeknews import GeeknewsCrawler
 from app.crawlers.anthropic_blog import AnthropicBlogCrawler
 from app.crawlers.base import RawArticle
 from app.services.ai_service import translate_and_summarize, generate_daily_summary, generate_keyword_tooltip
+from app.services.content_fetcher import fetch_article_content
 
 
 def calculate_score(article: RawArticle) -> int:
@@ -24,9 +25,10 @@ def run_crawling() -> dict:
     """
     전체 크롤링 실행
     1. 모든 소스에서 기사 수집
-    2. AI로 번역/요약/키워드 추출
-    3. DB 저장
-    4. 오늘의 핵심 이슈 생성
+    2. 기사 본문 수집
+    3. AI로 번역/요약/키워드 추출
+    4. DB 저장
+    5. 오늘의 핵심 이슈 생성 (항상 갱신)
     """
     print(f"\n🚀 크롤링 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -35,9 +37,6 @@ def run_crawling() -> dict:
         GeeknewsCrawler(),
         AnthropicBlogCrawler(),
     ]
-
-    # 추가 소스 크롤러 (DB에서 사용자가 추가한 소스)
-    # TODO: 사용자 추가 소스 크롤러 연결
 
     all_articles: List[RawArticle] = []
     for crawler in crawlers:
@@ -55,7 +54,6 @@ def run_crawling() -> dict:
     all_articles.sort(key=calculate_score, reverse=True)
 
     saved_count = 0
-    saved_articles = []
 
     print(f"\n🤖 AI 처리 시작 (총 {len(all_articles)}개)...")
 
@@ -68,9 +66,12 @@ def run_crawling() -> dict:
             if existing:
                 continue
 
-            # AI 번역 + 요약 + 키워드 추출
+            # 기사 본문 수집
             print(f"  🔄 처리 중: {article.title[:50]}...")
-            ai_result = translate_and_summarize(article.title, article.url)
+            content = fetch_article_content(article.url)
+
+            # AI 번역 + 요약 + 키워드 추출 (본문 포함)
+            ai_result = translate_and_summarize(article.title, article.url, content)
 
             # 키워드 툴팁 캐싱
             for keyword in ai_result.get("keywords", []):
@@ -103,28 +104,19 @@ def run_crawling() -> dict:
             ))
 
             saved_count += 1
-            saved_articles.append({
-                "title_original": article.title,
-                "title_ko": ai_result.get("title_ko", article.title),
-                "source": article.source,
-            })
 
         print(f"\n💾 DB 저장 완료: {saved_count}개")
 
-        # 오늘의 핵심 이슈 생성
+        # 오늘의 핵심 이슈 생성 - 신규 기사가 없어도 항상 갱신
         today = date.today().isoformat()
-        existing_summary = conn.execute(
-            "SELECT id FROM daily_summary WHERE date = ?", (today,)
-        ).fetchone()
+        print("📝 오늘의 핵심 이슈 생성 중...")
 
-        if not existing_summary and saved_articles:
-            print("📝 오늘의 핵심 이슈 생성 중...")
-            # 오늘 저장된 상위 15개 기사 가져오기
-            top_articles = conn.execute(
-                "SELECT title_ko, title_original, source FROM articles ORDER BY score DESC LIMIT 15"
-            ).fetchall()
+        top_articles = conn.execute(
+            "SELECT title_ko, title_original, source FROM articles ORDER BY score DESC LIMIT 15"
+        ).fetchall()
+
+        if top_articles:
             articles_for_summary = [dict(row) for row in top_articles]
-
             summary = generate_daily_summary(articles_for_summary)
             conn.execute(
                 "INSERT OR REPLACE INTO daily_summary (date, summary) VALUES (?, ?)",

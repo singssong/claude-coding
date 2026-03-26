@@ -27,29 +27,40 @@ def _call_gemini(prompt: str) -> str:
         return ""
 
 
-def translate_and_summarize(title: str, url: str = "") -> Dict[str, str]:
+def translate_and_summarize(title: str, url: str = "", content: str = "") -> Dict[str, str]:
     """
-    기사 제목을 한국어로 번역하고 1줄 요약 생성
+    기사 제목 + 본문을 바탕으로 한국어 번역, 요약, 키워드 추출
     반환: {"title_ko": str, "summary_ko": str, "keywords": list}
     """
-    prompt = f"""다음 기술 기사 제목을 한국어로 번역하고, 내용을 1줄로 요약해주세요.
-또한 기술 전문 키워드(최대 4개)를 추출해주세요.
+    # 본문이 있으면 내용 기반 분석, 없으면 제목만으로 처리
+    if content:
+        prompt = f"""다음 기술 기사를 분석해주세요.
 
 기사 제목: {title}
-기사 URL: {url}
+기사 본문 (일부):
+{content[:2500]}
 
-반드시 아래 JSON 형식으로만 응답하세요 (다른 설명 없이):
+아래 JSON 형식으로만 응답하세요 (다른 설명 없이):
 {{
-  "title_ko": "번역된 제목",
-  "summary_ko": "기사 내용 1줄 요약 (한국어, 50자 이내)",
+  "title_ko": "제목을 한국어로 번역 (없으면 한국어 제목 그대로)",
+  "summary_ko": "기사 핵심 내용 요약 (한국어, 2~3문장, 100자 이내)",
+  "keywords": ["핵심 기술 키워드1", "키워드2", "키워드3", "키워드4"]
+}}"""
+    else:
+        prompt = f"""다음 기술 기사 제목을 분석해주세요. (본문 수집 불가)
+
+기사 제목: {title}
+
+아래 JSON 형식으로만 응답하세요 (다른 설명 없이):
+{{
+  "title_ko": "제목을 한국어로 번역",
+  "summary_ko": "제목 기반 예상 내용 요약 (한국어, 50자 이내)",
   "keywords": ["키워드1", "키워드2", "키워드3"]
 }}"""
 
     result = _call_gemini(prompt)
 
     try:
-        # JSON 파싱
-        # 마크다운 코드블록 제거
         result = result.replace("```json", "").replace("```", "").strip()
         data = json.loads(result)
         return {

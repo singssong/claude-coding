@@ -26,16 +26,12 @@ class AnthropicBlogCrawler(BaseCrawler):
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Anthropic 뉴스 카드 파싱
-            # 링크 태그 중 /news/ 경로를 가진 것들 수집
             seen_urls = set()
-            links = soup.find_all("a", href=True)
 
-            for link in links:
+            # /news/slug 형태의 링크 중 heading이 있는 카드만 수집
+            for link in soup.find_all("a", href=True):
                 href = link.get("href", "")
-
-                # /news/로 시작하는 개별 기사 링크만
-                if not href.startswith("/news/") or href == "/news":
+                if not href.startswith("/news/") or href == "/news/":
                     continue
 
                 full_url = BASE_URL + href
@@ -43,24 +39,35 @@ class AnthropicBlogCrawler(BaseCrawler):
                     continue
                 seen_urls.add(full_url)
 
-                # 제목 추출 (링크 내부 텍스트 또는 부모 요소)
-                title = link.get_text(strip=True)
-                if not title or len(title) < 10:
-                    # 부모 요소에서 제목 찾기
-                    parent = link.find_parent(["div", "article", "section"])
-                    if parent:
-                        heading = parent.find(["h1", "h2", "h3", "h4"])
-                        if heading:
-                            title = heading.get_text(strip=True)
+                # 링크 또는 부모 블록에서 h2/h3 제목 찾기
+                title = ""
+                search_el = link if link.get_text(strip=True) else link.find_parent()
+                for _ in range(4):
+                    if search_el is None:
+                        break
+                    heading = search_el.find(["h2", "h3", "h4"])
+                    if heading:
+                        title = heading.get_text(strip=True)
+                        break
+                    search_el = search_el.find_parent()
 
-                if not title or len(title) < 10:
+                # heading 없으면 링크 텍스트에서 날짜/카테고리 제거
+                if not title:
+                    raw = link.get_text(separator=" ", strip=True)
+                    # "Product Feb 17, 2026 제목 본문..." 형태에서 제목만 추출
+                    # 날짜 패턴(숫자 4자리) 이후 첫 문장
+                    import re
+                    match = re.split(r'\d{4}\s+', raw, maxsplit=1)
+                    title = match[-1].strip() if match else raw
+
+                if not title or len(title) < 8:
                     continue
 
                 articles.append(RawArticle(
                     title=title,
                     url=full_url,
                     source="Anthropic Blog",
-                    score=50,          # 공식 블로그는 기본 점수 부여
+                    score=50,
                     comment_count=0,
                     view_count=0,
                 ))
