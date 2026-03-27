@@ -1,0 +1,7 @@
+{
+  "name": "ehson",
+  "expertise": ["transformer architecture", "LLM pre-training", "FastAPI", "Python"],
+  "already_knows": ["MoE basics", "RLHF", "Constitutional AI concept", "attention mechanism"],
+  "interests": ["AI reasoning", "inference optimization", "robotics", "AI startups"],
+  "context": "AI/software engineer building AI applications in Korea. Reads Korean. Comfortable with ML research papers and implementation details."
+}

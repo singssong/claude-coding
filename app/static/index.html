@@ -16,6 +16,7 @@
         <span class="logo-sub">AI 기술 트렌드</span>
       </div>
       <nav>
+        <span class="profile-pill" id="profilePill" style="display:none"></span>
         <a href="/settings" class="nav-link">⚙️ 소스 설정</a>
       </nav>
     </div>
@@ -23,11 +24,11 @@
 
   <main>
 
-    <!-- 오늘의 핵심 이슈 -->
+    <!-- 내러티브 브리핑 -->
     <section class="daily-summary-section">
       <div class="section-label">
-        <span class="badge">TODAY</span>
-        <span class="section-title">오늘의 핵심 이슈</span>
+        <span class="badge">BRIEFING</span>
+        <span class="section-title">오늘의 브리핑</span>
         <span class="update-time" id="updateTime"></span>
       </div>
       <div class="daily-summary-box" id="dailySummary">
@@ -37,22 +38,22 @@
       </div>
     </section>
 
-    <!-- 상위 10개 -->
-    <section class="feed-section">
+    <!-- 오늘의 픽 (1-5위, 당신에게 포함) -->
+    <section class="feed-section" id="picksSection" style="display:none">
       <div class="feed-header">
-        <h2 class="feed-title">오늘의 인기 기사</h2>
-        <span class="feed-count" id="topFeedCount"></span>
+        <h2 class="feed-title">오늘의 픽</h2>
+        <span class="feed-sub-label">당신에게 새로운 내용</span>
       </div>
-      <div id="topFeed" class="news-feed"></div>
+      <div id="picksFeed" class="news-feed"></div>
     </section>
 
-    <!-- 읽을만한 기사 5개 -->
-    <section class="feed-section" id="extraSection" style="display:none">
+    <!-- 나머지 인기 기사 (6-10위) -->
+    <section class="feed-section" id="remainingSection" style="display:none">
       <div class="feed-header" style="margin-top:32px">
-        <h2 class="feed-title">읽을만한 기사</h2>
-        <span class="feed-count">5개</span>
+        <h2 class="feed-title">나머지 인기 기사</h2>
+        <span class="feed-count" id="remainingCount"></span>
       </div>
-      <div id="extraFeed" class="news-feed extra-feed"></div>
+      <div id="remainingFeed" class="news-feed extra-feed"></div>
     </section>
 
     <div id="loadingIndicator" class="loading">

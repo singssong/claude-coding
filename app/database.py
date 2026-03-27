@@ -113,9 +113,15 @@ def _migrate(conn):
     existing = {row[1] for row in conn.execute("PRAGMA table_info(articles)").fetchall()}
     if "is_translated" not in existing:
         conn.execute("ALTER TABLE articles ADD COLUMN is_translated INTEGER DEFAULT 0")
+    if "why_for_user" not in existing:
+        conn.execute("ALTER TABLE articles ADD COLUMN why_for_user TEXT")
 
     existing_kt = {row[1] for row in conn.execute("PRAGMA table_info(keyword_tooltips)").fetchall()}
     if "image_url" not in existing_kt:
         conn.execute("ALTER TABLE keyword_tooltips ADD COLUMN image_url TEXT")
     if "source" not in existing_kt:
         conn.execute("ALTER TABLE keyword_tooltips ADD COLUMN source TEXT DEFAULT 'ai'")
+
+    existing_ds = {row[1] for row in conn.execute("PRAGMA table_info(daily_summary)").fetchall()}
+    if "format_version" not in existing_ds:
+        conn.execute("ALTER TABLE daily_summary ADD COLUMN format_version TEXT DEFAULT 'v1'")

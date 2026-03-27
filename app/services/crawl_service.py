@@ -99,8 +99,11 @@ def run_crawling() -> dict:
     # 상위 15개 제목 일괄 번역 (미번역 기사만)
     _translate_top_titles(limit=15)
 
-    # 오늘의 핵심 이슈 생성
-    _generate_daily_summary_if_needed()
+    # 상위 5개 기사 본문 분석 + why_for_user 생성
+    _translate_top_articles_with_profile(limit=5)
+
+    # 오늘의 내러티브 브리핑 생성
+    _generate_narrative_briefing_if_needed()
 
     return {
         "status": "success",
@@ -139,14 +142,54 @@ def _translate_top_titles(limit: int = 15):
     print("[제목 번역 완료]")
 
 
-def _generate_daily_summary_if_needed():
-    """오늘의 핵심 이슈 생성 (하루 1회)"""
-    from app.services.ai_service import generate_daily_summary
+def _translate_top_articles_with_profile(limit: int = 5):
+    """
+    상위 N개 기사의 본문을 수집하여 why_for_user 생성
+    idempotent: why_for_user가 이미 있는 기사는 스킵
+    """
+    from app.services.ai_service import translate_and_summarize
+    from app.services.content_fetcher import fetch_article_content
+
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT id, title_original, url FROM articles
+            WHERE why_for_user IS NULL OR why_for_user = ''
+            ORDER BY score DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+
+    if not rows:
+        print("[프로필 분석] 처리할 기사 없음")
+        return
+
+    print(f"[프로필 분석] 상위 {len(rows)}개 기사 분석 중...")
+
+    for row in rows:
+        try:
+            content = fetch_article_content(row["url"])
+            result = translate_and_summarize(row["title_original"], row["url"], content)
+            why = result.get("why_for_user") or None
+
+            with get_db() as conn:
+                conn.execute(
+                    "UPDATE articles SET why_for_user = ? WHERE id = ?",
+                    (why, row["id"])
+                )
+            print(f"  OK #{row['id']}")
+        except Exception as e:
+            print(f"  FAIL #{row['id']}: {e}")
+
+    print("[프로필 분석 완료]")
+
+
+def _generate_narrative_briefing_if_needed():
+    """오늘의 내러티브 브리핑 생성 (하루 1회, format_version v2 기준)"""
+    from app.services.ai_service import generate_narrative_briefing
 
     today = date.today().isoformat()
     with get_db() as conn:
         existing = conn.execute(
-            "SELECT id FROM daily_summary WHERE date = ?", (today,)
+            "SELECT id FROM daily_summary WHERE date = ? AND format_version = 'v2'", (today,)
         ).fetchone()
         if existing:
             return
@@ -158,10 +201,10 @@ def _generate_daily_summary_if_needed():
         if not top_articles:
             return
 
-        print("[핵심 이슈 생성 중...]")
-        summary = generate_daily_summary([dict(r) for r in top_articles])
+        print("[내러티브 브리핑 생성 중...]")
+        summary = generate_narrative_briefing([dict(r) for r in top_articles])
         conn.execute(
-            "INSERT OR REPLACE INTO daily_summary (date, summary) VALUES (?, ?)",
+            "INSERT OR REPLACE INTO daily_summary (date, summary, format_version) VALUES (?, ?, 'v2')",
             (today, summary)
         )
-        print("[핵심 이슈 완료]")
+        print("[내러티브 브리핑 완료]")

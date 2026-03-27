@@ -3,7 +3,7 @@
 const tooltip = document.getElementById('tooltip');
 let tooltipTimer = null;
 
-// ===== 오늘의 핵심 이슈 =====
+// ===== 오늘의 브리핑 =====
 async function loadDailySummary() {
   try {
     const res = await fetch('/api/daily-summary');
@@ -20,10 +20,26 @@ async function loadDailySummary() {
         })}`;
       }
     } else {
-      box.innerHTML = '<span style="color:var(--text-muted)">아직 오늘의 이슈가 없습니다. 설정에서 수집을 실행해주세요.</span>';
+      box.innerHTML = '<span style="color:var(--text-muted)">아직 오늘의 브리핑이 없습니다. 설정에서 수집을 실행해주세요.</span>';
     }
   } catch (e) {
-    document.getElementById('dailySummary').textContent = '이슈를 불러오지 못했습니다.';
+    document.getElementById('dailySummary').textContent = '브리핑을 불러오지 못했습니다.';
+  }
+}
+
+// ===== 프로필 상태 표시 =====
+async function loadProfileStatus() {
+  try {
+    const res = await fetch('/api/profile');
+    if (!res.ok) return;
+    const data = await res.json();
+    const pill = document.getElementById('profilePill');
+    if (data && data.name) {
+      pill.textContent = `${data.name} 맞춤`;
+      pill.style.display = 'inline-block';
+    }
+  } catch (e) {
+    // 프로필 없으면 pill 숨김 유지
   }
 }
 
@@ -44,22 +60,25 @@ async function loadArticles() {
       return;
     }
 
-    const top10 = articles.slice(0, 10);
-    const extra5 = articles.slice(10, 15);
-
-    // 상위 10개 렌더링
-    const topFeed = document.getElementById('topFeed');
-    document.getElementById('topFeedCount').textContent = `${top10.length}개`;
-    top10.forEach((article, idx) => {
-      topFeed.appendChild(createCard(article, idx + 1, false));
+    // 오늘의 픽: 상위 5개
+    const picks = articles.slice(0, 5);
+    const picksSection = document.getElementById('picksSection');
+    const picksFeed = document.getElementById('picksFeed');
+    picksSection.style.display = 'block';
+    picks.forEach((article, idx) => {
+      picksFeed.appendChild(createCard(article, idx + 1, false));
     });
 
-    // 읽을만한 기사 5개 렌더링
-    if (extra5.length > 0) {
-      const extraFeed = document.getElementById('extraFeed');
-      document.getElementById('extraSection').style.display = 'block';
-      extra5.forEach((article, idx) => {
-        extraFeed.appendChild(createCard(article, idx + 11, true));
+    // 나머지 인기 기사: 6-10위
+    const remaining = articles.slice(5, 10);
+    if (remaining.length > 0) {
+      const remainingSection = document.getElementById('remainingSection');
+      const remainingFeed = document.getElementById('remainingFeed');
+      const remainingCount = document.getElementById('remainingCount');
+      remainingSection.style.display = 'block';
+      remainingCount.textContent = `${remaining.length}개`;
+      remaining.forEach((article, idx) => {
+        remainingFeed.appendChild(createCard(article, idx + 6, true));
       });
     }
 
@@ -76,11 +95,15 @@ function createCard(article, rank, isExtra) {
   wrapper.dataset.id = article.id;
 
   const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
-  // 번역된 제목 있으면 표시, 없으면 원문
   const displayTitle = (article.title_ko && article.title_ko !== article.title_original)
     ? article.title_ko
     : article.title_original;
   const hasTranslation = !!(article.title_ko && article.title_ko !== article.title_original);
+
+  // 픽 섹션 카드(1-5위)에만 why_for_user 미리보기 표시
+  const whySnippet = (!isExtra && article.why_for_user)
+    ? `<div class="why-for-user-preview" style="font-size:12px;color:var(--green);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">${escapeHtml(article.why_for_user)}</div>`
+    : '';
 
   wrapper.innerHTML = `
     <div class="news-card" onclick="toggleExpand(${article.id})">
@@ -91,6 +114,7 @@ function createCard(article, rank, isExtra) {
           ${!hasTranslation ? '<span class="untranslated-badge">EN</span>' : ''}
         </div>
         <div class="card-title">${escapeHtml(displayTitle)}</div>
+        ${whySnippet}
         <div class="card-footer">
           <div class="card-stats">
             ${article.comment_count > 0 ? `<span class="stat">댓글 ${formatNum(article.comment_count)}</span>` : ''}
@@ -144,7 +168,7 @@ async function toggleExpand(articleId) {
     translatedCache[articleId] = data;
     renderTranslation(contentEl, data);
 
-    // 카드 제목도 한국어로 갱신
+    // 카드 제목 한국어로 갱신
     const titleEl = wrapper.querySelector('.card-title');
     if (titleEl && data.title_ko) titleEl.textContent = data.title_ko;
     wrapper.querySelector('.untranslated-badge')?.remove();
@@ -164,9 +188,14 @@ function renderTranslation(el, data) {
       onclick="event.stopPropagation()">${escapeHtml(kw)}</span>`
   ).join('');
 
+  const whyHTML = data.why_for_user
+    ? `<div class="why-for-you">${escapeHtml(data.why_for_user)}</div>`
+    : '';
+
   el.innerHTML = `
     <div class="translated-title">${escapeHtml(data.title_ko || data.title_original || '')}</div>
     ${data.summary_ko ? `<div class="translated-summary">${escapeHtml(data.summary_ko)}</div>` : ''}
+    ${whyHTML}
     ${keywordHTML ? `<div class="keyword-row">${keywordHTML}</div>` : ''}
     <div class="expand-actions">
       <a href="${escapeHtml(data.url)}" target="_blank" rel="noopener" class="btn-original"
@@ -225,4 +254,5 @@ function formatNum(n) {
 
 // ===== 초기화 =====
 loadDailySummary();
+loadProfileStatus();
 loadArticles();
